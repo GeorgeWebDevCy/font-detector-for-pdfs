@@ -1,7 +1,42 @@
 import sys
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 import flet as ft
 from pdf_utils import analyze_pdf
+
+
+def get_log_path():
+    base_dir = os.getenv("LOCALAPPDATA") or os.path.expanduser("~")
+    log_dir = os.path.join(base_dir, "PDFFontDetector", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    return os.path.join(log_dir, "pdffontdetector.log")
+
+
+def setup_logging():
+    log_path = get_log_path()
+    logger = logging.getLogger("pdffontdetector")
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = RotatingFileHandler(
+            log_path, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
+        )
+        formatter = logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s"
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger, log_path
+
+
+LOGGER, LOG_PATH = setup_logging()
+
+
+def _log_unhandled_exception(exc_type, exc, tb):
+    LOGGER.exception("Unhandled exception", exc_info=(exc_type, exc, tb))
+
+
+sys.excepthook = _log_unhandled_exception
 
 def get_resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -14,6 +49,7 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def main(page: ft.Page):
+    LOGGER.info("App start; log file at %s", LOG_PATH)
     page.title = "PDF Font Detector"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.padding = 20
@@ -70,6 +106,7 @@ def main(page: ft.Page):
     def process_pdf(file_path):
         nonlocal current_file_path
         current_file_path = file_path
+        LOGGER.info("Analyzing PDF: %s", file_path)
         
         # Show loading
         results_container.controls.clear()
@@ -82,6 +119,7 @@ def main(page: ft.Page):
         # For simplicity in this v1, running directly. Flet is async-capable but simple callbacks are sync.
         try:
             fonts = analyze_pdf(file_path)
+            LOGGER.info("Font scan complete: %d fonts found", len(fonts))
             
             loading_indicator.visible = False
             status_text.value = f"Found {len(fonts)} unique fonts in {os.path.basename(file_path)}"
@@ -120,6 +158,7 @@ def main(page: ft.Page):
                 results_container.controls.append(card)
                 
         except Exception as e:
+            LOGGER.exception("Error analyzing PDF: %s", file_path)
             loading_indicator.visible = False
             status_text.value = f"Error: {str(e)}"
             status_text.color = "red"
@@ -136,6 +175,7 @@ def main(page: ft.Page):
         if file_path and file_path.lower().endswith('.pdf'):
             process_pdf(file_path)
         else:
+            LOGGER.warning("Rejected drop: %s", file_path)
             status_text.value = "Only PDF files are supported."
             status_text.color = "red"
             page.update()
