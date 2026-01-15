@@ -165,9 +165,6 @@ def main(page: ft.Page):
                 loading_indicator,
                 pick_button
             ],
-                loading_indicator,
-                pick_button
-            ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER
         ),
