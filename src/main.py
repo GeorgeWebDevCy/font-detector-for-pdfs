@@ -25,17 +25,19 @@ def main(page: ft.Page):
     
     # UI Elements
     
-    def toggle_theme(e):
-        page.theme_mode = ft.ThemeMode.DARK if page.theme_mode == ft.ThemeMode.LIGHT else ft.ThemeMode.LIGHT
-        theme_icon.icon = "dark_mode" if page.theme_mode == ft.ThemeMode.LIGHT else "light_mode"
-        page.update()
-
-
+    
     theme_icon = ft.IconButton(
-        "dark_mode",
-        on_click=toggle_theme,
+        content=ft.Icon("dark_mode"),
         tooltip="Toggle Theme"
     )
+    
+    def toggle_theme(e):
+        page.theme_mode = ft.ThemeMode.DARK if page.theme_mode == ft.ThemeMode.LIGHT else ft.ThemeMode.LIGHT
+        theme_icon.content = ft.Icon("dark_mode" if page.theme_mode == ft.ThemeMode.LIGHT else "light_mode")
+        page.update()
+    
+    theme_icon.on_click = toggle_theme
+
 
     logo_path = get_resource_path(os.path.join("assets", "logo.png"))
     # Fallback for dev mode where CWD might not be root
@@ -124,23 +126,12 @@ def main(page: ft.Page):
         
         page.update()
 
-    def on_file_dropped(e: ft.FilePickerResultEvent):
-        if e.files:
-            file_path = e.files[0].path
-            if file_path.lower().endswith('.pdf'):
-                process_pdf(file_path)
-            else:
-                status_text.value = "Please select a valid PDF file."
-                status_text.color = "red"
-                page.update()
-    
-    file_picker = ft.FilePicker(on_result=on_file_dropped)
-    page.overlay.append(file_picker)
+
 
     # Simple Drop implementation using DragTarget if desired, but Flet Desktop has native drag-drop often handled via window events or Pickers.
     # However, Flet's 'on_file_drop' on the Page object is the best for Desktop drag/drop
     
-    def page_drop(e: ft.FileDropEvent):
+    def page_drop(e):
         file_path = e.file_path
         if file_path and file_path.lower().endswith('.pdf'):
             process_pdf(file_path)
@@ -151,28 +142,22 @@ def main(page: ft.Page):
 
     page.on_file_drop = page_drop
 
-    # Button to manually pick
-    pick_button = ft.ElevatedButton(
-        "Browse PDF",
-        on_click=lambda _: file_picker.pick_files(allow_multiple=False, allowed_extensions=["pdf"])
-    )
+
 
     drop_zone = ft.Container(
         content=ft.Column(
             [
                 ft.Icon("cloud_upload", size=60, color="blue_grey"),
                 status_text,
-                loading_indicator,
-                pick_button
+                loading_indicator
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             alignment=ft.MainAxisAlignment.CENTER
         ),
-        border=ft.border.all(2, "blue_grey_100", ft.border.BorderSide(2, color="grey", style=ft.BorderStyle.NONE)), # Dashed not easily avail directly, using solid for now
+        border=ft.border.all(2, "blue_grey_100"),
         border_radius=10,
         padding=40,
-        bgcolor="#E3F2FD",
-        alignment=ft.alignment.center
+        bgcolor="#E3F2FD"
     )
     
     page.add(
