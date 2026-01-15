@@ -27,13 +27,13 @@ def main(page: ft.Page):
     
     
     theme_icon = ft.IconButton(
-        icon=ft.icons.DARK_MODE,
+        icon="brightness_3",
         tooltip="Toggle Theme"
     )
     
     def toggle_theme(e):
         page.theme_mode = ft.ThemeMode.DARK if page.theme_mode == ft.ThemeMode.LIGHT else ft.ThemeMode.LIGHT
-        theme_icon.icon = ft.icons.DARK_MODE if page.theme_mode == ft.ThemeMode.LIGHT else ft.icons.LIGHT_MODE
+        theme_icon.icon = "brightness_3" if page.theme_mode == ft.ThemeMode.LIGHT else "brightness_7"
         page.update()
     
     theme_icon.on_click = toggle_theme
